@@ -1,0 +1,41 @@
+{
+  "name": "angular-sync",
+  "authors": [
+    "Emmanuel Telmon <etelmon@zimit.io>"
+  ],
+  "description": "This angular module allows an angular application maintain data in sync with the socketio-auth based server.",
+  "moduleType": [
+    "globals"
+  ],
+  "keywords": [
+    "socketio",
+    "auth",
+    "api"
+  ],
+  "license": "MIT",
+  "homepage": "",
+  "ignore": [
+    "**/.*",
+    "librairies",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests",
+    "gulpfile.js",
+    "build"
+  ],
+  "dependencies": {
+    "angular": "~1.4.8",
+    "lodash": "~4.0.0",
+    "angular-socketio": "git://github.com/z-open/angular-socketio#5466f641e7239640e7776c0b74e874558af6cbfb"
+  },
+  "devDependencies": {
+    "angular-mocks": "~1.4.3"
+  },
+  "resolutions": {
+    "angular": "~1.4.8"
+  },
+  "main": [
+    "dist/angular-sync.js"
+  ]
+}
