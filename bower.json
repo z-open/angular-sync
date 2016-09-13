@@ -22,7 +22,9 @@
     "test",
     "tests",
     "gulpfile.js",
-    "build"
+    "build",
+    "karma.conf.js",
+    "package.json"
   ],
   "dependencies": {
     "angular": "~1.4.8",
