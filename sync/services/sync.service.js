@@ -29,6 +29,7 @@ function sync($rootScope, $q, $socketio, $syncGarbageCollector) {
     var publicationListeners = {},
         publicationListenerCount = 0;
     var GRACE_PERIOD_IN_SECONDS = 8;
+    var SYNC_VERSION = '1.0';
     var console = getConsole();
 
     listenToSyncNotification();
@@ -407,6 +408,7 @@ function sync($rootScope, $q, $socketio, $syncGarbageCollector) {
 
         function registerSubscription() {
             $socketio.fetch('sync.subscribe', {
+                version: SYNC_VERSION,
                 id: subscriptionId, // to try to re-use existing subcription
                 publication: publication,
                 params: subParams
@@ -417,7 +419,10 @@ function sync($rootScope, $q, $socketio, $syncGarbageCollector) {
 
         function unregisterSubscription() {
             if (subscriptionId) {
-                $socketio.fetch('sync.unsubscribe', subscriptionId);
+                $socketio.fetch('sync.unsubscribe', {
+                    version: SYNC_VERSION,
+                    id: subscriptionId
+                });
                 subscriptionId = null;
             }
         }
