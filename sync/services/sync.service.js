@@ -3,7 +3,6 @@
  * 
  * Service that allows an array of data remain in sync with backend.
  * 
- * If network is lost, we load what we missed thanks to the timestamp..
  * 
  * ex:
  * when there is a notification, noticationService notifies that there is something new...then the dataset get the data and notifies all its callback.

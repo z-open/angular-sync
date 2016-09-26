@@ -27,15 +27,12 @@
     "package.json"
   ],
   "dependencies": {
-    "angular": "~1.4.8",
+    "angular": "~1.5.0",
     "lodash": "~4.0.0",
-    "angular-socketio": "git://github.com/z-open/angular-socketio#5466f641e7239640e7776c0b74e874558af6cbfb"
+    "angular-socketio": "git://github.com/z-open/angular-socketio#1.4"
   },
   "devDependencies": {
-    "angular-mocks": "~1.4.3"
-  },
-  "resolutions": {
-    "angular": "~1.4.8"
+    "angular-mocks": "~1.5.0"
   },
   "main": [
     "dist/angular-sync.js"
