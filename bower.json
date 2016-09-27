@@ -29,7 +29,7 @@
   ],
   "dependencies": {
     "angular": "~1.5.0",
-    "lodash": "~4.0.0",
+    "lodash": ">=4.0.0",
     "angular-socketio": "git://github.com/z-open/angular-socketio#1.4.0"
   },
   "devDependencies": {
