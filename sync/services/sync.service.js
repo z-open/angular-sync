@@ -107,7 +107,6 @@ function sync($rootScope, $q, $socketio, $syncGarbageCollector) {
         $socketio.on('SYNC_NOW', function (subNotification, fn) {
             console.log('Syncing with subscription [name:' + subNotification.name + ', id:' + subNotification.subscriptionId + ' , params:' + JSON.stringify(subNotification.params) + ']. Records:' + subNotification.records.length + '[' + (subNotification.diff ? 'Diff' : 'All') + ']');
             var listeners = publicationListeners[subNotification.name];
-            debugger
             if (listeners) {
                 for (var listener in listeners) {
                     listeners[listener](subNotification);
