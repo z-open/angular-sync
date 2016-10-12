@@ -28,7 +28,7 @@ function sync($rootScope, $q, $socketio, $syncGarbageCollector) {
     var publicationListeners = {},
         publicationListenerCount = 0;
     var GRACE_PERIOD_IN_SECONDS = 8;
-    var SYNC_VERSION = '1.0';
+    var SYNC_VERSION = '1.1';
     var console = getConsole();
 
     listenToSyncNotification();
@@ -107,6 +107,7 @@ function sync($rootScope, $q, $socketio, $syncGarbageCollector) {
         $socketio.on('SYNC_NOW', function (subNotification, fn) {
             console.log('Syncing with subscription [name:' + subNotification.name + ', id:' + subNotification.subscriptionId + ' , params:' + JSON.stringify(subNotification.params) + ']. Records:' + subNotification.records.length + '[' + (subNotification.diff ? 'Diff' : 'All') + ']');
             var listeners = publicationListeners[subNotification.name];
+            debugger
             if (listeners) {
                 for (var listener in listeners) {
                     listeners[listener](subNotification);
@@ -154,16 +155,18 @@ function sync($rootScope, $q, $socketio, $syncGarbageCollector) {
      */
 
     function Subscription(publication, scope) {
-        var subscriptionId, maxRevision = 0, timestampField, isSyncingOn = false, isSingle, updateDataStorage, cache, isInitialPushCompleted, deferredInitialization;
+        var timestampField, isSyncingOn = false, isSingle, updateDataStorage, cache, isInitialPushCompleted, deferredInitialization;
         var onReadyOff, formatRecord;
         var reconnectOff, publicationListenerOff, destroyOff;
         var objectClass;
-
+        var subscriptionId;
+        
         var sDs = this;
         var subParams = {};
         var recordStates = {};
         var innerScope;//= $rootScope.$new(true);
         var syncListener = new SyncListener();
+        
 
         this.ready = false;
         this.syncOn = syncOn;
@@ -277,7 +280,7 @@ function sync($rootScope, $q, $socketio, $syncGarbageCollector) {
             if (!isSingle) {
                 cache.length = 0;
             }
-            maxRevision = 0;
+
             subParams = fetchingParams || {};
             options = options || {};
             if (angular.isDefined(options.single)) {
@@ -461,6 +464,7 @@ function sync($rootScope, $q, $socketio, $syncGarbageCollector) {
                 // are other params matching?
                 // ex: we might have receive a notification about taskId=20 but this subscription are only interested about taskId-3
                 if (batchParams[param] !== subParams[param]) {
+                    matching = false;
                     break;
                 }
             }
