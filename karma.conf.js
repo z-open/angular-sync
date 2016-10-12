@@ -16,6 +16,9 @@ module.exports = function (config) {
 
         // list of files / patterns to load in the browser
         files: [
+            // necessary to make karma work with angular 1.5
+            './node_modules/phantomjs-polyfill/bind-polyfill.js',
+
             'libraries/angular/angular.js',
             'libraries/angular-mocks/angular-mocks.js',
             'libraries/lodash/dist/lodash.js',
