@@ -24,7 +24,7 @@ angular
     .module('sync')
     .factory('$sync', sync);
 
-function sync($rootScope, $q, $socketio, $syncGarbageCollector) {
+function sync($rootScope, $q, $socketio, $syncGarbageCollector, $syncMerge) {
     var publicationListeners = {},
         publicationListenerCount = 0;
     var GRACE_PERIOD_IN_SECONDS = 8;
@@ -159,13 +159,13 @@ function sync($rootScope, $q, $socketio, $syncGarbageCollector) {
         var reconnectOff, publicationListenerOff, destroyOff;
         var objectClass;
         var subscriptionId;
-        
+
         var sDs = this;
         var subParams = {};
         var recordStates = {};
         var innerScope;//= $rootScope.$new(true);
         var syncListener = new SyncListener();
-        
+
 
         this.ready = false;
         this.syncOn = syncOn;
@@ -591,9 +591,11 @@ function sync($rootScope, $q, $socketio, $syncGarbageCollector) {
 
         function updateSyncedObject(record) {
             recordStates[record.id] = record;
-            clearObject(cache);
+
             if (!record.remove) {
-                angular.extend(cache, record);
+                $syncMerge.merge(cache, record);
+            } else {
+                $syncMerge.clearObject(cache);
             }
         }
 
@@ -606,18 +608,16 @@ function sync($rootScope, $q, $socketio, $syncGarbageCollector) {
                     cache.push(record);
                 }
             } else {
-                // update the instance
-                clearObject(existing);
-                angular.extend(existing, record);
+                $syncMerge.merge(existing, record);
                 if (record.removed) {
                     cache.splice(cache.indexOf(existing), 1);
                 }
             }
         }
 
-        function clearObject(object) {
-            Object.keys(object).forEach(function (key) { delete object[key]; });
-        }
+
+
+
 
         function getRevision(record) {
             // what reserved field do we use as timestamp
