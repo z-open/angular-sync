@@ -6,16 +6,17 @@ describe('Sync Service: ', function () {
 
     beforeEach(module('sync')); // still depends on commont...until we create a bower/npm
 
-    beforeEach(module(function ($provide) {
+    beforeEach(module(function ($provide,$syncProvider) {
         backend = new MockBackend();
         $provide.value('$socketio', new MockSocketio());
+        $syncProvider.setDebug(2);
     }));
 
     beforeEach(inject(function (_$rootScope_, _$sync_, _$q_, _$timeout_, _$syncGarbageCollector_, _$socketio_) {
         $rootScope = _$rootScope_;
         $q = _$q_;
         $timeout = _$timeout_;
-
+        
         var syncCallbacks = {
             onUpdate: function () { },
             onRemove: function () { },
@@ -30,6 +31,8 @@ describe('Sync Service: ', function () {
             $socketio: _$socketio_
         }
 
+        
+        
         jasmine.clock().install();
         jasmine.clock().mockDate();
     }));

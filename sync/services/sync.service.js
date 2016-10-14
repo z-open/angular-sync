@@ -26,9 +26,10 @@ angular
 
 function syncProvider() {
 
-    var console = getConsole();
+    var debug;
 
     this.setDebug = function (value) {
+        debug = value;
     };
 
     this.$get = function sync($rootScope, $q, $socketio, $syncGarbageCollector, $syncMerge) {
@@ -68,7 +69,7 @@ function syncProvider() {
             var gracePeriod = setTimeout(function () {
                 if (!sDs.ready) {
                     sDs.destroy();
-                    console.log('Attempt to subscribe to publication ' + publicationName + ' failed');
+                    logInfo('Attempt to subscribe to publication ' + publicationName + ' failed');
                     deferred.reject('SYNC_TIMEOUT');
                 }
             }, GRACE_PERIOD_IN_SECONDS * 1000);
@@ -113,7 +114,7 @@ function syncProvider() {
         // every sync notification comes thru the same event then it is dispatches to the targeted subscriptions.
         function listenToSyncNotification() {
             $socketio.on('SYNC_NOW', function (subNotification, fn) {
-                console.log('Syncing with subscription [name:' + subNotification.name + ', id:' + subNotification.subscriptionId + ' , params:' + JSON.stringify(subNotification.params) + ']. Records:' + subNotification.records.length + '[' + (subNotification.diff ? 'Diff' : 'All') + ']');
+                logInfo('Syncing with subscription [name:' + subNotification.name + ', id:' + subNotification.subscriptionId + ' , params:' + JSON.stringify(subNotification.params) + ']. Records:' + subNotification.records.length + '[' + (subNotification.diff ? 'Diff' : 'All') + ']');
                 var listeners = publicationListeners[subNotification.name];
                 if (listeners) {
                     for (var listener in listeners) {
@@ -370,7 +371,7 @@ function syncProvider() {
                 }
                 deferredInitialization = $q.defer();
                 isInitialPushCompleted = false;
-                console.log('Sync ' + publication + ' on. Params:' + JSON.stringify(subParams));
+                logInfo('Sync ' + publication + ' on. Params:' + JSON.stringify(subParams));
                 isSyncingOn = true;
                 registerSubscription();
                 readyForListening();
@@ -389,7 +390,7 @@ function syncProvider() {
                     unregisterSubscription();
                     isSyncingOn = false;
 
-                    console.log('Sync ' + publication + ' off. Params:' + JSON.stringify(subParams));
+                    logInfo('Sync ' + publication + ' off. Params:' + JSON.stringify(subParams));
                     if (publicationListenerOff) {
                         publicationListenerOff();
                         publicationListenerOff = null;
@@ -434,7 +435,7 @@ function syncProvider() {
                 // give a chance to connect before listening to reconnection... @TODO should have user_reconnected_event
                 setTimeout(function () {
                     reconnectOff = innerScope.$on('user_connected', function () {
-                        console.debug('Resyncing after network loss to ' + publication);
+                        logDebug('Resyncing after network loss to ' + publication);
                         // note the backend might return a new subscription if the client took too much time to reconnect.
                         registerSubscription();
                     });
@@ -511,7 +512,7 @@ function syncProvider() {
                 var newData;
                 sDs.ready = false;
                 records.forEach(function (record) {
-                    //                   console.log('Datasync [' + dataStreamName + '] received:' +JSON.stringify(record));//+ record.id);
+                    //                   logInfo('Datasync [' + dataStreamName + '] received:' +JSON.stringify(record));//+ record.id);
                     if (record.remove) {
                         removeRecord(record);
                     } else if (recordStates[record.id]) {
@@ -574,7 +575,7 @@ function syncProvider() {
 
 
             function addRecord(record) {
-                console.debug('Sync -> Inserted New record #' + record.id + ' for subscription to ' + publication);// JSON.stringify(record));
+                logDebug('Sync -> Inserted New record #' + record.id + ' for subscription to ' + publication);// JSON.stringify(record));
                 getRevision(record); // just make sure we can get a revision before we handle this record
                 updateDataStorage(formatRecord ? formatRecord(record) : record);
                 syncListener.notify('add', record);
@@ -586,7 +587,7 @@ function syncProvider() {
                 if (getRevision(record) <= getRevision(previous)) {
                     return null;
                 }
-                console.debug('Sync -> Updated record #' + record.id + ' for subscription to ' + publication);// JSON.stringify(record));
+                logDebug('Sync -> Updated record #' + record.id + ' for subscription to ' + publication);// JSON.stringify(record));
                 updateDataStorage(formatRecord ? formatRecord(record) : record);
                 syncListener.notify('update', record);
                 return record;
@@ -596,7 +597,7 @@ function syncProvider() {
             function removeRecord(record) {
                 var previous = recordStates[record.id];
                 if (!previous || getRevision(record) > getRevision(previous)) {
-                    console.debug('Sync -> Removed #' + record.id + ' for subscription to ' + publication);
+                    logDebug('Sync -> Removed #' + record.id + ' for subscription to ' + publication);
                     // We could have for the same record consecutively fetching in this order:
                     // delete id:4, rev 10, then add id:4, rev 9.... by keeping track of what was deleted, we will not add the record since it was deleted with a most recent timestamp.
                     record.removed = true; // So we only flag as removed, later on the garbage collector will get rid of it.         
@@ -613,7 +614,7 @@ function syncProvider() {
                     var existingRecord = recordStates[record.id];
                     if (existingRecord && record.revision >= existingRecord.revision
                     ) {
-                        //console.debug('Collect Now:' + JSON.stringify(record));
+                        //logDebug('Collect Now:' + JSON.stringify(record));
                         delete recordStates[record.id];
                     }
                 });
@@ -700,18 +701,21 @@ function syncProvider() {
             }
         }
     };
-    
-    function getConsole() {
-        // to help with debugging for now until we opt for a nice logger. In production, log and debug should automatically be removed by the build from the code.... TODO:need to check out the production code
-        return {
-            log: function (msg) {
-                window.console.debug('SYNC(info): ' + msg);
-            },
-            debug: function (msg) {
-                //  window.console.debug('SYNC(debug): ' + msg);
-            }
-        };
+
+    function logInfo(msg) {
+        if (debug) {
+            console.debug('SYNC(info): ' + msg);
+        }
     }
+
+    function logDebug(msg) {
+        if (debug == 2) {
+            console.debug('SYNC(debug): ' + msg);
+        }
+
+    }
+
+
 
 };
 
