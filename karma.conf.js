@@ -18,10 +18,10 @@ module.exports = function (config) {
         files: [
             // necessary to make karma work with angular 1.5
             './node_modules/phantomjs-polyfill/bind-polyfill.js',
-
             'libraries/angular/angular.js',
             'libraries/angular-mocks/angular-mocks.js',
             'libraries/lodash/dist/lodash.js',
+            'libraries//simple-uuid/uuid.js',
             'libraries/angular-socketio/dist/angular-socketio.js',
             'sync/sync.module.js',
             'sync/**/*.*.js',
