@@ -154,7 +154,7 @@ function sync($rootScope, $q, $socketio, $syncGarbageCollector, $syncMerge) {
      */
 
     function Subscription(publication, scope) {
-        var timestampField, isSyncingOn = false, isSingle, updateDataStorage, cache, isInitialPushCompleted, deferredInitialization;
+        var timestampField, isSyncingOn = false, isSingle, updateDataStorage, cache, isInitialPushCompleted, deferredInitialization, strictMode;
         var onReadyOff, formatRecord;
         var reconnectOff, publicationListenerOff, destroyOff;
         var objectClass;
@@ -191,6 +191,8 @@ function sync($rootScope, $q, $socketio, $syncGarbageCollector, $syncMerge) {
 
         this.setObjectClass = setObjectClass;
         this.getObjectClass = getObjectClass;
+
+        this.setStrictMode = setStrictMode;
 
         this.attach = attach;
         this.destroy = destroy;
@@ -233,6 +235,19 @@ function sync($rootScope, $q, $socketio, $syncGarbageCollector, $syncMerge) {
                 sDs.syncOff();
             }
             return sDs;
+        }
+
+        /**
+         * if set to true, if an object within an array property of the record to sync has no ID field.
+         * an error would be thrown.
+         * It is important if we want to be able to maintain instance references even for the objects inside arrays.
+         *
+         * Forces us to use id every where.
+         *
+         * Should be the default...but too restrictive for now.
+         */
+        function setStrictMode(value) {
+            strictMode = true;
         }
 
         /**
@@ -307,14 +322,25 @@ function sync($rootScope, $q, $socketio, $syncGarbageCollector, $syncMerge) {
                 return sDs;
             }
 
+            var updateFn;
             isSingle = value;
             if (value) {
-                updateDataStorage = updateSyncedObject;
+                updateFn = updateSyncedObject;
                 cache = objectClass ? new objectClass({}) : {};
             } else {
-                updateDataStorage = updateSyncedArray;
+                updateFn = updateSyncedArray;
                 cache = [];
             }
+
+            updateDataStorage = function (record) {
+                try {
+                    updateFn(record);
+                } catch (e) {
+                    e.message = 'Received Invalid object from publication [' + publication + ']: ' + JSON.stringify(record) + '. DETAILS: ' + e.message;
+                    throw e;
+                }
+            }
+
             return sDs;
         }
 
@@ -593,7 +619,7 @@ function sync($rootScope, $q, $socketio, $syncGarbageCollector, $syncMerge) {
             recordStates[record.id] = record;
 
             if (!record.remove) {
-                $syncMerge.merge(cache, record);
+                $syncMerge.merge(cache, record, strictMode);
             } else {
                 $syncMerge.clearObject(cache);
             }
@@ -608,7 +634,7 @@ function sync($rootScope, $q, $socketio, $syncGarbageCollector, $syncMerge) {
                     cache.push(record);
                 }
             } else {
-                $syncMerge.merge(existing, record);
+                $syncMerge.merge(existing, record, strictMode);
                 if (record.removed) {
                     cache.splice(cache.indexOf(existing), 1);
                 }

@@ -187,7 +187,7 @@ describe('SyncMerge', function () {
             expect(currentVersionObjectB.t).toEqual(updateVersionObjectB.t);
         });
 
-        it('should throw an error when merging object without id within an array', function () {
+        it('should throw an error when merging object without id within an array in strict mode', function () {
 
             var currentVersionObjectA = { t: 'un' };
             var currentVersion = {
@@ -199,11 +199,25 @@ describe('SyncMerge', function () {
                 a: [updateVersionObjectA]
             }
             try {
-                syncMerge.merge(currentVersion, updateVersion);
+                syncMerge.merge(currentVersion, updateVersion, true);
                 expect(true).toBe(false);
             } catch (e) {
                 expect(e.message).toContain('maintain');
             }
+        });
+
+        it('should NOT throw an error when merging object without id within an array', function () {
+            var currentVersionObjectA = { t: 'un' };
+            var currentVersion = {
+                a: [currentVersionObjectA]
+            };
+
+            var updateVersionObjectA = { t: 'one' };
+            var updateVersion = {
+                a: [updateVersionObjectA]
+            }
+            syncMerge.merge(currentVersion, updateVersion);
+
         });
 
 
