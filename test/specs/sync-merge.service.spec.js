@@ -177,7 +177,7 @@ describe('SyncMerge', function () {
             var updateVersion = {
                 a: [updateVersionObjectB, updateVersionObjectA]
             }
-            syncMerge.merge(currentVersion, updateVersion);
+            syncMerge.merge(currentVersion, updateVersion,true);
             // object reference should not have changed for object with same id
             expect(_.find(currentVersion.a, { id: '#A' })).toBeDefined();
             expect(_.find(currentVersion.a, { id: '#A' }) === currentVersionObjectA).toBe(true);
