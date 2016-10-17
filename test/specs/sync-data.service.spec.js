@@ -6,7 +6,7 @@ describe('Sync Service: ', function () {
 
     beforeEach(module('sync')); // still depends on commont...until we create a bower/npm
 
-    beforeEach(module(function ($provide,$syncProvider) {
+    beforeEach(module(function ($provide, $syncProvider) {
         backend = new MockBackend();
         $provide.value('$socketio', new MockSocketio());
         $syncProvider.setDebug(2);
@@ -16,7 +16,7 @@ describe('Sync Service: ', function () {
         $rootScope = _$rootScope_;
         $q = _$q_;
         $timeout = _$timeout_;
-        
+
         var syncCallbacks = {
             onUpdate: function () { },
             onRemove: function () { },
@@ -31,8 +31,8 @@ describe('Sync Service: ', function () {
             $socketio: _$socketio_
         }
 
-        
-        
+
+
         jasmine.clock().install();
         jasmine.clock().mockDate();
     }));
@@ -43,6 +43,12 @@ describe('Sync Service: ', function () {
         spec.r2 = { id: 2, description: 'person2', revision: 4 };
         spec.r3 = { id: 3, description: 'person3', revision: 5 };
         spec.recordWithNoRevision = { id: 44, description: 'person44' };
+
+        spec.rc1 = { id: { id1: 1, id2: 1 }, description: 'person1', revision: 0 };
+        spec.rc1b = { id: { id1: 1, id2: 1 }, description: 'personOne', revision: 1 };
+        spec.rc2 = { id: { id1: 2, id2: 1 }, description: 'person2', revision: 4 };
+        spec.rc3 = { id: { id1: 3, id2: 1 }, description: 'person3', revision: 5 };
+
 
         Person = definePersonClass();
         spec.p1 = new Person({ id: 1, firstname: 'Tom', lastname: 'Great', revision: 1 });
@@ -154,7 +160,7 @@ describe('Sync Service: ', function () {
     // it('should not allow attaching a different scope after initialization', function () {
     //     spec.sds = spec.$sync.subscribe('myPub');
     //     spec.sds.setParameters();
-      
+
     // });
 
     // it('should not allow changing to single object synchronization mode after initialization', function () {
@@ -164,7 +170,7 @@ describe('Sync Service: ', function () {
         spec.sds = spec.$sync.subscribe('myPub');
         spec.sds.setParameters();
         spec.sds.setObjectClass(Person);
-        expect(spec.sds.getObjectClass()).toBeUndefined();        
+        expect(spec.sds.getObjectClass()).toBeUndefined();
     });
 
     describe('Data Array sync', function () {
@@ -234,6 +240,66 @@ describe('Sync Service: ', function () {
     });
 
 
+    describe('Data Array sync with composite key', function () {
+        beforeEach(function () {
+            backend.setData([spec.rc1, spec.rc2]);
+            spec.sds = spec.$sync.subscribe('myPub');
+            spec.sds.setParameters();
+            $rootScope.$digest();
+        });
+
+        it('should receive an array', function (done) {
+            spec.sds.waitForDataReady().then(function (data) {
+                expect(_.isArray(data)).toBe(true);
+                expect(data.length).toBe(2);
+                done();
+            });
+            $rootScope.$digest();
+        });
+
+        // one or list to test... check if instance is maintained too.
+        it('should add a record to the array when receiving an add operation', function (done) {
+            spec.sds.waitForDataReady().then(function (data) {
+                expect(data.length).toBe(2);
+                backend.notifyDataChanges([spec.rc3]);
+                expect(data.length).toBe(3);
+                expect(!!findRecord(data, spec.rc3.id)).toBe(true);
+                done();
+            });
+            $rootScope.$digest();
+        });
+
+        it('should update existing record in the array when receiving an update operation', function (done) {
+            spec.sds.waitForDataReady().then(function (data) {
+                expect(data.length).toBe(2);
+                var rec = _.find(data, { id: spec.rc1.id });
+                backend.notifyDataChanges([spec.rc1b]);
+                expect(data.length).toBe(2);
+                expect(rec).toBeDefined();
+                expect(rec.description).toBe(spec.rc1b.description);
+                done();
+            });
+            $rootScope.$digest();
+        });
+
+        it('should remove a record from array when receiving a removal operation', function (done) {
+            spec.sds.waitForDataReady().then(function (data) {
+                expect(data.length).toBe(2);
+                backend.notifyDataRemovals([{ id: spec.rc2.id, revision: spec.rc2.revision + 1 }]);
+                expect(data.length).toBe(1);
+                expect(findRecord(data, spec.r2.id)).not.toBeDefined();
+                done();
+            });
+            $rootScope.$digest();
+        });
+    });
+
+    function findRecord(data, id) {
+        return _.find(data, function (record) {
+            return spec.$sync.getIdValue(record.id) === spec.$sync.getIdValue(id);
+        }
+        );
+    }
     describe('Single record sync', function () {
         beforeEach(function () {
             backend.setData([spec.r1]);
@@ -270,6 +336,7 @@ describe('Sync Service: ', function () {
             $rootScope.$digest();
         });
     });
+
 
     describe('Object Array sync', function () {
         beforeEach(function () {
@@ -599,11 +666,11 @@ describe('Sync Service: ', function () {
             spec.sds.waitForDataReady().then(function (data) {
                 backend.notifyDataRemovals([{ id: spec.r2.id, revision: spec.r2.revision + 1 }]);
                 expect(spec.garbageCollector.run).not.toHaveBeenCalled();
-                expect(spec.sds.isExistingStateFor(spec.r2.id)).toBe(true);
+                expect(spec.sds.isExistingStateFor(spec.r2)).toBe(true);
                 // this is the time it takes before the spec.garbageCollector runs;
                 jasmine.clock().tick(spec.garbageCollector.getSeconds() * 1000 + 100);
                 expect(spec.garbageCollector.run).toHaveBeenCalled();
-                expect(spec.sds.isExistingStateFor(spec.r2.id)).toBe(false);
+                expect(spec.sds.isExistingStateFor(spec.r2)).toBe(false);
                 done();
             });
             $rootScope.$digest();
@@ -683,7 +750,7 @@ describe('Sync Service: ', function () {
 
         function setData(data) {
             copyAll(data).forEach(function (record) {
-                db[record.id] = record;
+                db[spec.$sync.getIdValue(record)] = record;
             });
         }
 
@@ -698,7 +765,7 @@ describe('Sync Service: ', function () {
         function notifyDataChanges(data) {
             data = copyAll(data);
             data.forEach(function (record) {
-                db[record.id] = record;
+                db[spec.$sync.getIdValue(record)] = record;
             })
             if (isSubscribedOnBackend) {
                 self.onPublicationNotficationCallback({
@@ -714,7 +781,7 @@ describe('Sync Service: ', function () {
             data = copyAll(data);
             data.forEach(function (record) {
                 record.remove = true;
-                delete db[record.id];
+                delete db[spec.$sync.getIdValue(record)];
             });
             if (isSubscribedOnBackend) {
                 self.onPublicationNotficationCallback({

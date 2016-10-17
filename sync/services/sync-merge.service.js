@@ -49,16 +49,18 @@ function syncMerge() {
         }
         var array = [];
         source.forEach(function (item) {
-            if (!isStrictMode) {
+            // does not try to maintain object references in arrays
+            // super loose mode.
+            if (isStrictMode==='NONE') {
                 array.push(item);
             } else {
-                // QUICK FIX: I had to remove this code.... since survey does not work...
-                //
                 // object in array must have an id otherwise we can't maintain the instance reference
                 if (!_.isArray(item) && _.isObject(item)) {
                     // let try to find the instance
                     if (angular.isDefined(item.id)) {
-                        array.push(mergeObject(_.find(destination, { id: item.id }), item, isStrictMode));
+                        array.push(mergeObject(_.find(destination, function (obj) {
+                            return obj.id.toString() === item.id.toString();
+                        }), item, isStrictMode));
                     } else {
                         if (isStrictMode) {
                             throw new Error('objects in array must have an id otherwise we can\'t maintain the instance reference. ' + JSON.stringify(item));

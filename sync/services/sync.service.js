@@ -45,7 +45,8 @@ function syncProvider() {
         var service = {
             subscribe: subscribe,
             resolveSubscription: resolveSubscription,
-            getGracePeriod: getGracePeriod
+            getGracePeriod: getGracePeriod,
+            getIdValue: getIdValue
         };
 
         return service;
@@ -512,10 +513,10 @@ function syncProvider() {
                 var newData;
                 sDs.ready = false;
                 records.forEach(function (record) {
-                    //                   logInfo('Datasync [' + dataStreamName + '] received:' +JSON.stringify(record));//+ record.id);
+                    //                   logInfo('Datasync [' + dataStreamName + '] received:' +JSON.stringify(record));//+ record.id.toString());
                     if (record.remove) {
                         removeRecord(record);
-                    } else if (recordStates[record.id]) {
+                    } else if (getRecordState(record)) {
                         // if the record is already present in the cache...so it is mightbe an update..
                         newData = updateRecord(record);
                     } else {
@@ -575,7 +576,7 @@ function syncProvider() {
 
 
             function addRecord(record) {
-                logDebug('Sync -> Inserted New record #' + record.id + ' for subscription to ' + publication);// JSON.stringify(record));
+                logDebug('Sync -> Inserted New record #' + record.id.toString() + ' for subscription to ' + publication);// JSON.stringify(record));
                 getRevision(record); // just make sure we can get a revision before we handle this record
                 updateDataStorage(formatRecord ? formatRecord(record) : record);
                 syncListener.notify('add', record);
@@ -583,11 +584,11 @@ function syncProvider() {
             }
 
             function updateRecord(record) {
-                var previous = recordStates[record.id];
+                var previous = getRecordState(record);
                 if (getRevision(record) <= getRevision(previous)) {
                     return null;
                 }
-                logDebug('Sync -> Updated record #' + record.id + ' for subscription to ' + publication);// JSON.stringify(record));
+                logDebug('Sync -> Updated record #' + record.id.toString() + ' for subscription to ' + publication);// JSON.stringify(record));
                 updateDataStorage(formatRecord ? formatRecord(record) : record);
                 syncListener.notify('update', record);
                 return record;
@@ -595,9 +596,9 @@ function syncProvider() {
 
 
             function removeRecord(record) {
-                var previous = recordStates[record.id];
+                var previous = getRecordState(record);
                 if (!previous || getRevision(record) > getRevision(previous)) {
-                    logDebug('Sync -> Removed #' + record.id + ' for subscription to ' + publication);
+                    logDebug('Sync -> Removed #' + record.id.toString() + ' for subscription to ' + publication);
                     // We could have for the same record consecutively fetching in this order:
                     // delete id:4, rev 10, then add id:4, rev 9.... by keeping track of what was deleted, we will not add the record since it was deleted with a most recent timestamp.
                     record.removed = true; // So we only flag as removed, later on the garbage collector will get rid of it.         
@@ -611,21 +612,29 @@ function syncProvider() {
             }
             function dispose(record) {
                 $syncGarbageCollector.dispose(function collect() {
-                    var existingRecord = recordStates[record.id];
+                    var existingRecord = getRecordState(record);
                     if (existingRecord && record.revision >= existingRecord.revision
                     ) {
                         //logDebug('Collect Now:' + JSON.stringify(record));
-                        delete recordStates[record.id];
+                        delete recordStates[getIdValue(record.id)];
                     }
                 });
             }
 
-            function isExistingStateFor(recordId) {
-                return !!recordStates[recordId];
+            function isExistingStateFor(record) {
+                return !!getRecordState(record);
+            }
+
+            function saveRecordState(record) {
+                recordStates[getIdValue(record.id)] = record;
+            }
+
+            function getRecordState(record) {
+                return recordStates[getIdValue(record.id)];
             }
 
             function updateSyncedObject(record) {
-                recordStates[record.id] = record;
+                saveRecordState(record);
 
                 if (!record.remove) {
                     $syncMerge.merge(cache, record, strictMode);
@@ -635,10 +644,10 @@ function syncProvider() {
             }
 
             function updateSyncedArray(record) {
-                var existing = recordStates[record.id];
+                var existing = getRecordState(record);
                 if (!existing) {
                     // add new instance
-                    recordStates[record.id] = record;
+                    saveRecordState(record);
                     if (!record.removed) {
                         cache.push(record);
                     }
@@ -649,10 +658,6 @@ function syncProvider() {
                     }
                 }
             }
-
-
-
-
 
             function getRevision(record) {
                 // what reserved field do we use as timestamp
@@ -701,6 +706,19 @@ function syncProvider() {
             }
         }
     };
+    function getIdValue(id) {
+        if (!_.isObject(id)) {
+            return id;
+        }
+        // build composite key value
+        var r = _.join(_.map(id, function (value) {
+            return value;
+        }), '~');
+        console.log(r);
+        return r;
+
+    }
+
 
     function logInfo(msg) {
         if (debug) {
