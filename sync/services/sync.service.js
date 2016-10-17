@@ -714,9 +714,7 @@ function syncProvider() {
         var r = _.join(_.map(id, function (value) {
             return value;
         }), '~');
-        console.log(r);
         return r;
-
     }
 
 
