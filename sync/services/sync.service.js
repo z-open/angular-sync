@@ -257,7 +257,8 @@ function syncProvider() {
              * Should be the default...but too restrictive for now.
              */
             function setStrictMode(value) {
-                strictMode = true;
+                strictMode = value;
+                return sDs;
             }
 
             /**
