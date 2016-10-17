@@ -37,7 +37,7 @@ function syncProvider() {
         var publicationListeners = {},
             publicationListenerCount = 0;
         var GRACE_PERIOD_IN_SECONDS = 8;
-        var SYNC_VERSION = '1.1';
+        var SYNC_VERSION = '1.2';
 
 
         listenToSyncNotification();
