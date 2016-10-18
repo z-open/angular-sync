@@ -6,10 +6,11 @@ describe('Sync Service: ', function () {
 
     beforeEach(module('sync')); // still depends on commont...until we create a bower/npm
 
-    beforeEach(module(function ($provide, $syncProvider) {
+    beforeEach(module(function ($provide, $socketioProvider, $syncProvider) {
         backend = new MockBackend();
         $provide.value('$socketio', new MockSocketio());
-        $syncProvider.setDebug(2);
+        $syncProvider.setDebug(2);     
+        $socketioProvider.setDebug(true);
     }));
 
     beforeEach(inject(function (_$rootScope_, _$sync_, _$q_, _$timeout_, _$syncGarbageCollector_, _$socketio_) {
@@ -806,7 +807,7 @@ describe('Sync Service: ', function () {
         }
 
         function unsubscribe(data) {
-            console.log("Unsubscribed: " + data);
+            console.log("Unsubscribed: " + JSON.stringify(data));
             isSubscribedOnBackend = false;
             return $q.resolve();
         }

@@ -514,7 +514,7 @@ function syncProvider() {
                 var newData;
                 sDs.ready = false;
                 records.forEach(function (record) {
-                    //                   logInfo('Datasync [' + dataStreamName + '] received:' +JSON.stringify(record));//+ record.id.toString());
+                    //                   logInfo('Datasync [' + dataStreamName + '] received:' +JSON.stringify(record));//+ JSON.stringify(record.id));
                     if (record.remove) {
                         removeRecord(record);
                     } else if (getRecordState(record)) {
@@ -577,7 +577,7 @@ function syncProvider() {
 
 
             function addRecord(record) {
-                logDebug('Sync -> Inserted New record #' + record.id.toString() + ' for subscription to ' + publication);// JSON.stringify(record));
+                logDebug('Sync -> Inserted New record #' + JSON.stringify(record.id) + ' for subscription to ' + publication);// JSON.stringify(record));
                 getRevision(record); // just make sure we can get a revision before we handle this record
                 updateDataStorage(formatRecord ? formatRecord(record) : record);
                 syncListener.notify('add', record);
@@ -589,7 +589,7 @@ function syncProvider() {
                 if (getRevision(record) <= getRevision(previous)) {
                     return null;
                 }
-                logDebug('Sync -> Updated record #' + record.id.toString() + ' for subscription to ' + publication);// JSON.stringify(record));
+                logDebug('Sync -> Updated record #' + JSON.stringify(record.id) + ' for subscription to ' + publication);// JSON.stringify(record));
                 updateDataStorage(formatRecord ? formatRecord(record) : record);
                 syncListener.notify('update', record);
                 return record;
@@ -599,7 +599,7 @@ function syncProvider() {
             function removeRecord(record) {
                 var previous = getRecordState(record);
                 if (!previous || getRevision(record) > getRevision(previous)) {
-                    logDebug('Sync -> Removed #' + record.id.toString() + ' for subscription to ' + publication);
+                    logDebug('Sync -> Removed #' + JSON.stringify(record.id) + ' for subscription to ' + publication);
                     // We could have for the same record consecutively fetching in this order:
                     // delete id:4, rev 10, then add id:4, rev 9.... by keeping track of what was deleted, we will not add the record since it was deleted with a most recent timestamp.
                     record.removed = true; // So we only flag as removed, later on the garbage collector will get rid of it.         
