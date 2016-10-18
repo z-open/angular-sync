@@ -297,7 +297,7 @@ function syncProvider() {
              * @returns a promise that resolves when data is arrived.
              */
             function setParameters(fetchingParams, options) {
-                if (isSyncingOn && angular.equals(fetchingParams, subParams)) {
+                if (isSyncingOn && angular.equals(fetchingParams || {}, subParams)) {
                     // if the params have not changed, just returns with current data.
                     return sDs; //$q.resolve(getData());
                 }
