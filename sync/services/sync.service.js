@@ -12,7 +12,7 @@
  * 
  * Pre-Requiste:
  * -------------
- * Sync does not work if objects do not have BOTH id and revision field!!!!
+ * Sync requires objects have BOTH id and revision fields/properties.
  * 
  * When the backend writes any data to the db that are supposed to be syncronized:
  * It must make sure each add, update, removal of record is timestamped.
@@ -638,7 +638,7 @@ function syncProvider() {
                 saveRecordState(record);
 
                 if (!record.remove) {
-                    $syncMerge.merge(cache, record, strictMode);
+                    $syncMerge.update(cache, record, strictMode);
                 } else {
                     $syncMerge.clearObject(cache);
                 }
@@ -653,7 +653,7 @@ function syncProvider() {
                         cache.push(record);
                     }
                 } else {
-                    $syncMerge.merge(existing, record, strictMode);
+                    $syncMerge.update(existing, record, strictMode);
                     if (record.removed) {
                         cache.splice(cache.indexOf(existing), 1);
                     }

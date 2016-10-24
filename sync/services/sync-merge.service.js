@@ -6,20 +6,25 @@ angular
 function syncMerge() {
 
     return {
-        merge: mergeObject,
+        update: updateObject,
         clearObject: clearObject
     }
 
 
-    /** merge an object with an other. Merge also inner objects and objects in array. 
-     * Reference to the original objects are maintained in the destination object.
-     * Only content is updated.
+    /**
+     * This function updates an object with the content of another.
+     * The inner objects and objects in array will also be updated.
+     * References to the original objects are maintained in the destination object so Only content is updated.
      *
-     *@param <object> destination  object to merge into
-     *@param <object> destination  object to merge into
+     * The properties in the source object that are not in the destination will be removed from the destination object.
+     *
+     * 
+     *
+     *@param <object> destination  object to update
+     *@param <object> source  object to update from
      *@param <boolean> isStrictMode default false, if true would generate an error if inner objects in array do not have id field
      */
-    function mergeObject(destination, source, isStrictMode) {
+    function updateObject(destination, source, isStrictMode) {
         if (!destination) {
             return source;// _.assign({}, source);;
         }
@@ -27,11 +32,11 @@ function syncMerge() {
         var object = {};
         for (var property in source) {
             if (_.isArray(source[property])) {
-                object[property] = mergeArray(destination[property], source[property], isStrictMode);
+                object[property] = updateArray(destination[property], source[property], isStrictMode);
             } else if (_.isFunction(source[property])) {
                 object[property] = source[property];
-            } else if (_.isObject(source[property])) {
-                object[property] = mergeObject(destination[property], source[property], isStrictMode);
+            } else if (_.isObject(source[property]) && !_.isDate(source[property]) ) {
+                object[property] = updateObject(destination[property], source[property], isStrictMode);
             } else {
                 object[property] = source[property];
             }
@@ -43,7 +48,7 @@ function syncMerge() {
         return destination;
     }
 
-    function mergeArray(destination, source, isStrictMode) {
+    function updateArray(destination, source, isStrictMode) {
         if (!destination) {
             return source;
         }
@@ -58,7 +63,7 @@ function syncMerge() {
                 if (!_.isArray(item) && _.isObject(item)) {
                     // let try to find the instance
                     if (angular.isDefined(item.id)) {
-                        array.push(mergeObject(_.find(destination, function (obj) {
+                        array.push(updateObject(_.find(destination, function (obj) {
                             return obj.id.toString() === item.id.toString();
                         }), item, isStrictMode));
                     } else {
