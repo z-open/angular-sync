@@ -315,16 +315,20 @@ function syncProvider() {
                 return sDs;
             }
 
-            // wait for the initial fetch to complete then returns this subscription
+            /**
+             * @returns a promise that waits for the initial fetch to complete then wait for the initial fetch to complete then returns this subscription.
+             */
             function waitForSubscriptionReady() {
-                return deferredInitialization.promise.then(function () {
+                return syncOn().then(function () {
                     return sDs;
                 });
             }
 
-            // wait for the initial fetch to complete then returns the data
+            /**
+             * @returns a promise that waits for the initial fetch to complete then returns the data
+             */
             function waitForDataReady() {
-                return deferredInitialization.promise;
+                return syncOn();
             }
 
             // does the dataset returns only one object? not an array?
