@@ -311,7 +311,7 @@ function syncProvider() {
                 if (angular.isDefined(options.single)) {
                     setSingle(options.single);
                 }
-                syncOn();
+                startSyncing();
                 return sDs;
             }
 
@@ -319,7 +319,7 @@ function syncProvider() {
              * @returns a promise that waits for the initial fetch to complete then wait for the initial fetch to complete then returns this subscription.
              */
             function waitForSubscriptionReady() {
-                return syncOn().then(function () {
+                return startSyncing().then(function () {
                     return sDs;
                 });
             }
@@ -328,7 +328,7 @@ function syncProvider() {
              * @returns a promise that waits for the initial fetch to complete then returns the data
              */
             function waitForDataReady() {
-                return syncOn();
+                return startSyncing();
             }
 
             // does the dataset returns only one object? not an array?
@@ -364,28 +364,25 @@ function syncProvider() {
                 return cache;
             }
 
-            /**
-             * the dataset will start listening to the datastream 
-             * 
-             * Note During the sync, it will also call the optional callbacks - after processing EACH record received.
-             * 
-             * @returns a promise that will be resolved when the data is ready.
-             */
-            function syncOn() {
-                if (isSyncingOn) {
-                    return deferredInitialization.promise;
-                }
-                deferredInitialization = $q.defer();
-                isInitialPushCompleted = false;
-                logInfo('Sync ' + publication + ' on. Params:' + JSON.stringify(subParams));
-                isSyncingOn = true;
-                registerSubscription();
-                readyForListening();
-                return deferredInitialization.promise;
-            }
 
             /**
+             * Activate syncing
+             *
+             * @returns this subcription
+             *
+             */
+            function syncOn() {
+                startSyncing();
+                return sDs;
+            }
+
+
+            /**
+             * Deactivate syncing
+             *
              * the dataset is no longer listening and will not call any callback
+             *
+             * @returns this subcription
              */
             function syncOff() {
                 if (deferredInitialization) {
@@ -406,6 +403,27 @@ function syncProvider() {
                         reconnectOff = null;
                     }
                 }
+                return sDs;
+            }
+
+            /**
+             * the dataset will start listening to the datastream 
+             * 
+             * Note During the sync, it will also call the optional callbacks - after processing EACH record received.
+             * 
+             * @returns a promise that will be resolved when the data is ready.
+             */
+            function startSyncing() {
+                if (isSyncingOn) {
+                    return deferredInitialization.promise;
+                }
+                deferredInitialization = $q.defer();
+                isInitialPushCompleted = false;
+                logInfo('Sync ' + publication + ' on. Params:' + JSON.stringify(subParams));
+                isSyncingOn = true;
+                registerSubscription();
+                readyForListening();
+                return deferredInitialization.promise;
             }
 
             function isSyncing() {

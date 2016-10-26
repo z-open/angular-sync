@@ -115,37 +115,40 @@ describe('Sync Service: ', function () {
         $rootScope.$digest();
     });
 
-    it('should start syncing when setting params', function () {
-        backend.setData([spec.r1, spec.r2]);
-        expect(backend.acknowledge).not.toHaveBeenCalled();
-        spec.sds = spec.$sync.subscribe('myPub');
-        expect(spec.sds.isSyncing()).toBe(false);
-        spec.sds.setParameters();
-        expect(spec.sds.isSyncing()).toBe(true);
-    });
-
-    it('should start syncing when waiting on data ready', function () {
-        backend.setData([spec.r1, spec.r2]);
-        expect(backend.acknowledge).not.toHaveBeenCalled();
-        spec.sds = spec.$sync.subscribe('myPub');
-        expect(spec.sds.isSyncing()).toBe(false);
-        spec.sds.waitForDataReady();
-        expect(spec.sds.isSyncing()).toBe(true);
-    });
-
-    it('should start syncing when waiting on subscription is ready', function (done) {
-        backend.setData([spec.r1, spec.r2]);
-        expect(backend.acknowledge).not.toHaveBeenCalled();
-        spec.sds = spec.$sync.subscribe('myPub');
-        expect(spec.sds.isSyncing()).toBe(false);
-        var promise = spec.sds.waitForSubscriptionReady();
-        expect(spec.sds.isSyncing()).toBe(true);
-        promise.then(function (sub) {
-            expect(spec.sds).toEqual(sub);
-            done();
+    describe('Syncinc actitivity', function () {
+        beforeEach(function () {
+            backend.setData([spec.r1, spec.r2]);
+            spec.sds = spec.$sync.subscribe('myPub');
         });
-        $rootScope.$digest();
 
+        it('should NOT start right after subscribing', function () {
+            expect(spec.sds.isSyncing()).toBe(false);
+        });
+
+        it('should start when setting syncing to on', function () {
+            spec.sds.syncOn();
+            expect(spec.sds.isSyncing()).toBe(true);
+        });
+        
+        it('should start when setting params', function () {
+            spec.sds.setParameters();
+            expect(spec.sds.isSyncing()).toBe(true);
+        });
+
+        it('should start when waiting on data ready', function () {
+            spec.sds.waitForDataReady();
+            expect(spec.sds.isSyncing()).toBe(true);
+        });
+
+        it('should start when waiting on subscription is ready', function (done) {
+            var promise = spec.sds.waitForSubscriptionReady();
+            expect(spec.sds.isSyncing()).toBe(true);
+            promise.then(function (sub) {
+                expect(spec.sds).toEqual(sub);
+                done();
+            });
+            $rootScope.$digest();
+        });
     });
 
     it('should unsubscribe when subscription is destroyed', function (done) {
