@@ -10,7 +10,7 @@ describe('SyncMerge', function () {
 
 
 
-    it('should merge object basic object property with new properties of the source object', function () {
+    it('should update empty object with new properties of the source object', function () {
         var currentVersion = {
             // a: 1,
             // b: '2',
@@ -20,12 +20,12 @@ describe('SyncMerge', function () {
             a: 11,
             b: '22'
         }
-        syncMerge.merge(currentVersion, updateVersion);
+        syncMerge.update(currentVersion, updateVersion);
         expect(currentVersion.a).toEqual(updateVersion.a);
         expect(currentVersion.b).toEqual(updateVersion.b);
     });
 
-    it('should merge object basic object property with new property values of the source object', function () {
+    it('should update basic object properties with new property values of the source object', function () {
         var currentVersion = {
             a: 1,
             b: '2'
@@ -34,10 +34,26 @@ describe('SyncMerge', function () {
             a: 11,
             b: '22'
         }
-        syncMerge.merge(currentVersion, updateVersion);
+        syncMerge.update(currentVersion, updateVersion);
         expect(currentVersion.a).toEqual(updateVersion.a);
         expect(currentVersion.b).toEqual(updateVersion.b);
     });
+
+    it('should update object date property with new date value', function () {
+        var date = new Date();
+        var updateDate = new Date();
+        updateDate.setDate(updateDate.getDate() + 1);
+        var currentVersion = {
+            d: date
+        };
+        var updateVersion = {
+            d: updateDate
+        }
+        syncMerge.update(currentVersion, updateVersion);
+        expect(updateVersion.d instanceof Date).toBe(true);
+        expect(currentVersion.d.getTime()).toEqual(updateVersion.d.getTime());
+    });
+
 
     it('should remove with missing properties', function () {
         var currentVersion = {
@@ -47,7 +63,7 @@ describe('SyncMerge', function () {
         var updateVersion = {
             a: 11
         }
-        syncMerge.merge(currentVersion, updateVersion);
+        syncMerge.update(currentVersion, updateVersion);
         expect(currentVersion.a).toEqual(updateVersion.a);
         expect(currentVersion.b).toBeUndefined();
     });
@@ -59,7 +75,7 @@ describe('SyncMerge', function () {
         var updateVersion = {
             o: { p: 1 }
         }
-        syncMerge.merge(currentVersion, updateVersion);
+        syncMerge.update(currentVersion, updateVersion);
         expect(currentVersion.o).toEqual(updateVersion.o);
     });
 
@@ -71,7 +87,7 @@ describe('SyncMerge', function () {
         var updateVersion = {
             o: { p: 2 }
         }
-        syncMerge.merge(currentVersion, updateVersion);
+        syncMerge.update(currentVersion, updateVersion);
         expect(currentVersion.o === currentVersionObject).toEqual(true);
         expect(currentVersion.o.p).toEqual(updateVersion.o.p);
     });
@@ -85,7 +101,7 @@ describe('SyncMerge', function () {
             var updateVersion = {
                 a: [1, 2]
             }
-            syncMerge.merge(currentVersion, updateVersion);
+            syncMerge.update(currentVersion, updateVersion);
             expect(currentVersion.a).toEqual(updateVersion.a);
         });
 
@@ -98,7 +114,7 @@ describe('SyncMerge', function () {
             var updateVersion = {
                 a: [1, 2, 3]
             }
-            syncMerge.merge(currentVersion, updateVersion);
+            syncMerge.update(currentVersion, updateVersion);
             expect(currentVersion.a).toEqual(currentVersionArray);
             // should not be the same reference
             expect(currentVersion.a === updateVersion.a).toBe(false);
@@ -120,7 +136,7 @@ describe('SyncMerge', function () {
                     a: [2, 3, 4]
                 }
             }
-            syncMerge.merge(currentVersion, updateVersion);
+            syncMerge.update(currentVersion, updateVersion);
             expect(currentVersion.o.a[0]).toEqual(updateVersion.o.a[0]);
             expect(currentVersion.o.a[1]).toEqual(updateVersion.o.a[1]);
             expect(currentVersion.o.a[2]).toEqual(updateVersion.o.a[2]);
@@ -139,7 +155,7 @@ describe('SyncMerge', function () {
                     a: [2, 3, 4]
                 }
             }
-            syncMerge.merge(currentVersion, updateVersion);
+            syncMerge.update(currentVersion, updateVersion);
             expect(currentVersion.o.a).toEqual(currentVersionArray);
             // should not be the same reference
             expect(currentVersion.o.a === updateVersion.o.a).toBe(false);
@@ -159,12 +175,12 @@ describe('SyncMerge', function () {
                     a: [{ t: 'one' }, { t: 'another' }]
                 }
             }
-            syncMerge.merge(currentVersion, updateVersion);
+            syncMerge.update(currentVersion, updateVersion);
             expect(currentVersion.o.a[0].t).toEqual(updateVersion.o.a[0].t);
             expect(currentVersion.o.a[1].t).toEqual(updateVersion.o.a[1].t);
         });
 
-        it('should merge object within the array', function () {
+        it('should update object within the array', function () {
 
             var currentVersionObjectA = { id: '#A', t: 'un' };
             var currentVersionObjectB = { id: '#B', t: 'autre' };
@@ -177,7 +193,7 @@ describe('SyncMerge', function () {
             var updateVersion = {
                 a: [updateVersionObjectB, updateVersionObjectA]
             }
-            syncMerge.merge(currentVersion, updateVersion,true);
+            syncMerge.update(currentVersion, updateVersion, true);
             // object reference should not have changed for object with same id
             expect(_.find(currentVersion.a, { id: '#A' })).toBeDefined();
             expect(_.find(currentVersion.a, { id: '#A' }) === currentVersionObjectA).toBe(true);
@@ -199,7 +215,7 @@ describe('SyncMerge', function () {
                 a: [updateVersionObjectA]
             }
             try {
-                syncMerge.merge(currentVersion, updateVersion, true);
+                syncMerge.update(currentVersion, updateVersion, true);
                 expect(true).toBe(false);
             } catch (e) {
                 expect(e.message).toContain('maintain');
@@ -216,7 +232,7 @@ describe('SyncMerge', function () {
             var updateVersion = {
                 a: [updateVersionObjectA]
             }
-            syncMerge.merge(currentVersion, updateVersion);
+            syncMerge.update(currentVersion, updateVersion);
 
         });
 

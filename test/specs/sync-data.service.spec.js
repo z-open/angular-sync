@@ -9,7 +9,7 @@ describe('Sync Service: ', function () {
     beforeEach(module(function ($provide, $socketioProvider, $syncProvider) {
         backend = new MockBackend();
         $provide.value('$socketio', new MockSocketio());
-        $syncProvider.setDebug(2);     
+        $syncProvider.setDebug(2);
         $socketioProvider.setDebug(true);
     }));
 
@@ -85,12 +85,11 @@ describe('Sync Service: ', function () {
         spec.sds = spec.$sync.subscribe('myPub');
         expect(spec.sds.isSyncing()).toBe(false);
         expect(backend.subscribe).not.toHaveBeenCalled();
-        spec.sds.setParameters();
+        var promise = spec.sds.waitForDataReady();
         expect(backend.subscribe).toHaveBeenCalled();
         expect(spec.sds.isSyncing()).toBe(true);
-        $rootScope.$digest();
         expect(backend.unsubscribe).not.toHaveBeenCalled();
-        spec.sds.waitForDataReady().then(function (data) {
+        promise.then(function (data) {
             expect(backend.acknowledge).toHaveBeenCalled();
             expect(data.length).toBe(0);
             done();
@@ -98,15 +97,15 @@ describe('Sync Service: ', function () {
         $rootScope.$digest();
     });
 
+
     it('should subscribe and acknowledge to receive inital data', function (done) {
         backend.setData([spec.r1, spec.r2]);
         expect(backend.acknowledge).not.toHaveBeenCalled();
         spec.sds = spec.$sync.subscribe('myPub');
         expect(spec.sds.isSyncing()).toBe(false);
-        spec.sds.setParameters();
+        var promise = spec.sds.waitForDataReady();
         expect(spec.sds.isSyncing()).toBe(true);
-        $rootScope.$digest();
-        spec.sds.waitForDataReady().then(function (data) {
+        promise.then(function (data) {
             expect(backend.acknowledge).toHaveBeenCalled();
             expect(data.length).toBe(2);
             expect(!!_.find(data, spec.r1)).toBe(true);
@@ -116,10 +115,45 @@ describe('Sync Service: ', function () {
         $rootScope.$digest();
     });
 
+    describe('Syncinc actitivity', function () {
+        beforeEach(function () {
+            backend.setData([spec.r1, spec.r2]);
+            spec.sds = spec.$sync.subscribe('myPub');
+        });
+
+        it('should NOT start right after subscribing', function () {
+            expect(spec.sds.isSyncing()).toBe(false);
+        });
+
+        it('should start when setting syncing to on', function () {
+            spec.sds.syncOn();
+            expect(spec.sds.isSyncing()).toBe(true);
+        });
+        
+        it('should start when setting params', function () {
+            spec.sds.setParameters();
+            expect(spec.sds.isSyncing()).toBe(true);
+        });
+
+        it('should start when waiting on data ready', function () {
+            spec.sds.waitForDataReady();
+            expect(spec.sds.isSyncing()).toBe(true);
+        });
+
+        it('should start when waiting on subscription is ready', function (done) {
+            var promise = spec.sds.waitForSubscriptionReady();
+            expect(spec.sds.isSyncing()).toBe(true);
+            promise.then(function (sub) {
+                expect(spec.sds).toEqual(sub);
+                done();
+            });
+            $rootScope.$digest();
+        });
+    });
+
     it('should unsubscribe when subscription is destroyed', function (done) {
         spec.sds = spec.$sync.subscribe('myPub');
-        spec.sds.setParameters();
-        $rootScope.$digest();
+        spec.sds.waitForDataReady();
         $rootScope.$digest();
         expect(spec.sds.isSyncing()).toBe(true);
         expect(backend.unsubscribe).not.toHaveBeenCalled();
@@ -133,8 +167,7 @@ describe('Sync Service: ', function () {
         var scope = $rootScope.$new();
         spec.sds = spec.$sync.subscribe('myPub');
         spec.sds.attach(scope);
-        spec.sds.setParameters();
-        $rootScope.$digest();
+        spec.sds.waitForDataReady();
         $rootScope.$digest();
         expect(spec.sds.isSyncing()).toBe(true);
 
@@ -147,8 +180,7 @@ describe('Sync Service: ', function () {
     it('should unsubscribe when provided scope is destroyed', function (done) {
         var scope = $rootScope.$new();
         spec.sds = spec.$sync.subscribe('myPub', scope);
-        spec.sds.setParameters();
-        $rootScope.$digest();
+        spec.sds.waitForDataReady();
         $rootScope.$digest();
         expect(spec.sds.isSyncing()).toBe(true);
         expect(backend.unsubscribe).not.toHaveBeenCalled();
@@ -160,7 +192,7 @@ describe('Sync Service: ', function () {
 
     // it('should not allow attaching a different scope after initialization', function () {
     //     spec.sds = spec.$sync.subscribe('myPub');
-    //     spec.sds.setParameters();
+    //     spec.sds.waitForDataReady();
 
     // });
 
@@ -169,7 +201,7 @@ describe('Sync Service: ', function () {
 
     it('should not allow changing to set the object class after starting syncing', function () {
         spec.sds = spec.$sync.subscribe('myPub');
-        spec.sds.setParameters();
+        spec.sds.waitForDataReady();
         spec.sds.setObjectClass(Person);
         expect(spec.sds.getObjectClass()).toBeUndefined();
     });
@@ -178,8 +210,6 @@ describe('Sync Service: ', function () {
         beforeEach(function () {
             backend.setData([spec.r1, spec.r2]);
             spec.sds = spec.$sync.subscribe('myPub');
-            spec.sds.setParameters();
-            $rootScope.$digest();
         });
 
         it('should receive an array', function (done) {
@@ -245,8 +275,6 @@ describe('Sync Service: ', function () {
         beforeEach(function () {
             backend.setData([spec.rc1, spec.rc2]);
             spec.sds = spec.$sync.subscribe('myPub');
-            spec.sds.setParameters();
-            $rootScope.$digest();
         });
 
         it('should receive an array', function (done) {
@@ -305,8 +333,7 @@ describe('Sync Service: ', function () {
         beforeEach(function () {
             backend.setData([spec.r1]);
             spec.sds = spec.$sync.subscribe('myPub')
-                .setSingle(true)
-                .setParameters();
+                .setSingle(true);
             $rootScope.$digest();
         });
 
@@ -343,9 +370,7 @@ describe('Sync Service: ', function () {
         beforeEach(function () {
             backend.setData([spec.p2, spec.p1]);
             spec.sds = spec.$sync.subscribe('myPub')
-                .setObjectClass(Person)
-                .setParameters();
-            $rootScope.$digest();
+                .setObjectClass(Person);
         });
 
         it('should receive an array of objects with same class', function (done) {
@@ -377,9 +402,7 @@ describe('Sync Service: ', function () {
             backend.setData([spec.p1]);
             spec.sds = spec.$sync.subscribe('myPub')
                 .setSingle(true)
-                .setObjectClass(Person)
-                .setParameters();
-            $rootScope.$digest();
+                .setObjectClass(Person);
         });
 
         it('should receive an object', function (done) {
@@ -440,8 +463,6 @@ describe('Sync Service: ', function () {
                 backend.setData([spec.r1, spec.r2]);
                 spec.sds = spec.$sync.subscribe('myPub');
                 spec.sds.onUpdate(spec.syncCallbacks.onUpdate);
-                spec.sds.setParameters();
-                $rootScope.$digest();
             });
 
             it('should NOT get called on receiving data at initialization', function (done) {
@@ -467,8 +488,6 @@ describe('Sync Service: ', function () {
                 backend.setData([spec.r1, spec.r2]);
                 spec.sds = spec.$sync.subscribe('myPub');
                 spec.sds.onRemove(spec.syncCallbacks.onRemove);
-                spec.sds.setParameters();
-                $rootScope.$digest();
             });
 
             it('should NOT get called on receiving data at initialization', function (done) {
@@ -494,8 +513,6 @@ describe('Sync Service: ', function () {
                 backend.setData([spec.r1, spec.r2]);
                 spec.sds = spec.$sync.subscribe('myPub');
                 spec.sds.onAdd(spec.syncCallbacks.onAdd);
-                spec.sds.setParameters();
-                $rootScope.$digest();
             });
 
             it('should ALSO get called on receiving data at initialization', function (done) {
@@ -521,8 +538,6 @@ describe('Sync Service: ', function () {
                 backend.setData([spec.r1]);
                 spec.sds = spec.$sync.subscribe('myPub');
                 spec.sds.onReady(spec.syncCallbacks.onReady);
-                spec.sds.setParameters();
-                $rootScope.$digest();
             });
 
             it('should get called on receiving data at initialization', function (done) {
@@ -569,11 +584,10 @@ describe('Sync Service: ', function () {
                     .setOnReady(function (data) {
                         expect(_.isArray(data)).toBe(true);
                         done();
-                    })
-                    .setParameters();
+                    });
+                spec.sds.setParameters();
                 $rootScope.$digest();
-                spec.sds.waitForDataReady();
-                $rootScope.$digest();
+                //                spec.sds.waitForDataReady();
             });
 
 
@@ -649,8 +663,6 @@ describe('Sync Service: ', function () {
         beforeEach(function () {
             backend.setData([spec.r1, spec.r2]);
             spec.sds = spec.$sync.subscribe('myPub');
-            spec.sds.setParameters();
-            $rootScope.$digest();
         });
 
         it('should dispose removed record after receiving a removal operation', function (done) {
