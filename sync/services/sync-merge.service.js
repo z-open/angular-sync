@@ -49,9 +49,16 @@ function syncMerge() {
             var object = {};
             for (var property in source) {
                 var processedData = findProcessed(source[property]);
+
+//Object.getOwnPropertyDescriptor                
+                var d = Object.getOwnPropertyDescriptor(source, property);
                 if (processedData) {
                     object[property] = processedData;
-                } else
+                } else 
+                    if (d && (d.set || d.get)) {
+                        // do nothing, it is computed
+                        
+                    } else
 
                     if (_.isArray(source[property])) {
                         object[property] = updateArray(destination[property], source[property], isStrictMode);
@@ -62,6 +69,8 @@ function syncMerge() {
                         object[property] = source[property];
 
                         processed.push({ value: source[property], newValue: object[property] });
+
+                        // should do nothing...no function be added!
 
                     } else if (_.isObject(source[property]) && !_.isDate(source[property])) {
                         object[property] = updateObject(destination[property], source[property], isStrictMode);
