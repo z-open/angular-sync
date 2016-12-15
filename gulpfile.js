@@ -104,11 +104,11 @@ gulp.task('app-js-dev', ['iife-build-dev'], function () {
     //var src = appFiles.concat(genFiles);
     return gulp.src(src)
     // so that we load the source map in iife-build
-        .pipe(sourcemaps.init({ loadMaps: true }))
+      //  .pipe(sourcemaps.init({ loadMaps: true }))
         .pipe(concat('angular-sync.js'))
-        .pipe(annotate())
-        .pipe(filesize())
-        .pipe(sourcemaps.write())
+       // .pipe(annotate())
+       // .pipe(filesize())
+       // .pipe(sourcemaps.write())
         .pipe(gulp.dest('dist/'));
 });
 
