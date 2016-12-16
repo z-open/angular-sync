@@ -71,31 +71,31 @@ var appFiles = [
 
 // perform a variety of operations on our app js files
 // todo: need to make a change to handle for production properly
-gulp.task('app-js', ['iife-build-prod'], function (done) {
-    // model is not iife
-    var src = ['build/app-iife.js'];
-    return gulp.src(src)
-        .pipe(concat('angular-sync.min.js'))
-        .pipe(stripDebug())
-        .pipe(annotate())
-        .pipe(uglify())  
-        .pipe(filesize())
-        .pipe(gulp.dest('dist/'));
-});
+// gulp.task('app-js', ['iife-build-prod'], function (done) {
+//     // model is not iife
+//     var src = ['build/app-iife.js'];
+//     return gulp.src(src)
+//         .pipe(concat('angular-sync.min.js'))
+//         .pipe(stripDebug())
+//         .pipe(annotate())
+//         .pipe(uglify())  
+//         .pipe(filesize())
+//         .pipe(gulp.dest('dist/'));
+// });
 
-// wrap all angular code in bracket and add useStrict in prod
-gulp.task('iife-build-prod', function () {
-    return gulp.src(appFiles)
-        .pipe(iife({
-            useStrict: true,
-            trimCode: true,
-            prependSemicolon: false,
-            bindThis: false
-        }))
-        .pipe(concat('app-iife.js'))
-        .pipe(gulp.dest('build/'));
+// // wrap all angular code in bracket and add useStrict in prod
+// gulp.task('iife-build-prod', function () {
+//     return gulp.src(appFiles)
+//         .pipe(iife({
+//             useStrict: true,
+//             trimCode: true,
+//             prependSemicolon: false,
+//             bindThis: false
+//         }))
+//         .pipe(concat('app-iife.js'))
+//         .pipe(gulp.dest('build/'));
 
-});
+// });
 
 // perform a variety of operations on our app js files
 gulp.task('app-js-dev', ['iife-build-dev'], function () {
@@ -176,13 +176,13 @@ gulp.task('bump-dev', function () {
 });
 
 // build angular-socketio.js for dev (with map) and prod (min)
-gulp.task('build', ['app-js-dev','app-js'], function () {
+gulp.task('build', ['app-js-dev'], function () {
         gulp.start([ 'test','cleanup']);
 });
 
 
 // continuous watchers
-gulp.task('default', ['app-js-dev','app-js'], function () {
+gulp.task('default', ['app-js-dev'], function () {
     gulp.start([ 'app-watch', 'tdd']);
 });
 

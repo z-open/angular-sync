@@ -50,32 +50,33 @@ function syncMerge() {
             for (var property in source) {
                 var processedData = findProcessed(source[property]);
 
-//Object.getOwnPropertyDescriptor                
+                //Object.getOwnPropertyDescriptor                
                 var d = Object.getOwnPropertyDescriptor(source, property);
-                if (processedData) {
+                if (d && (d.set || d.get)) {
+                    // do nothing, it is computed
+
+                } else if (processedData) {
                     object[property] = processedData;
-                } else 
-                    if (d && (d.set || d.get)) {
-                        // do nothing, it is computed
-                        
-                    } else
 
-                    if (_.isArray(source[property])) {
-                        object[property] = updateArray(destination[property], source[property], isStrictMode);
+                } else  if (_.isArray(source[property])) {
 
-                        processed.push({ value: source[property], newValue: object[property] });
+                        var dest = destination[property] || source[property];
+                        object[property] = updateArray(dest, source[property], isStrictMode);
+                        processed.push({ value: source[property], newValue: dest });
+
 
                     } else if (_.isFunction(source[property])) {
-                        object[property] = source[property];
+                        //      object[property] = source[property];
 
-                        processed.push({ value: source[property], newValue: object[property] });
+                        //       processed.push({ value: source[property], newValue: object[property] });
 
                         // should do nothing...no function be added!
 
                     } else if (_.isObject(source[property]) && !_.isDate(source[property])) {
-                        object[property] = updateObject(destination[property], source[property], isStrictMode);
 
-                        processed.push({ value: source[property], newValue: object[property] });
+                        var dest = destination[property] || source[property];
+                        object[property] = updateObject(dest, source[property], isStrictMode);
+                        processed.push({ value: source[property], newValue: dest });
 
                     } else {
                         object[property] = source[property];
@@ -109,9 +110,11 @@ function syncMerge() {
                         if (!_.isArray(item) && _.isObject(item)) {
                             // let try to find the instance
                             if (angular.isDefined(item.id)) {
-                                array.push(updateObject(_.find(destination, function (obj) {
+                                var dest = _.find(destination, function (obj) {
                                     return obj.id.toString() === item.id.toString();
-                                }), item, isStrictMode));
+                                });
+                                array.push(updateObject(dest, item, isStrictMode));
+                                processed.push({ value: item, newValue: dest });
                             } else {
                                 if (isStrictMode) {
                                     throw new Error('objects in array must have an id otherwise we can\'t maintain the instance reference. ' + JSON.stringify(item));
