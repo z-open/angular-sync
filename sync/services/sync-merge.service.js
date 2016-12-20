@@ -29,8 +29,12 @@ function syncMerge() {
 
         var processed = [];
 
-        return updateObject(destination, source, isStrictMode);
+        return updateObject(destination, source);
 
+
+        function saveObjectReference(sourceObj, destObj) {
+            processed.push({ value: sourceObj, newValue: destObj });
+        }
 
         function findObjectReference(value) {
             if (!_.isArray(value) && !_.isObject(value) && !_.isDate(value) && !_.isFunction(value)) {
@@ -42,17 +46,18 @@ function syncMerge() {
             return found ? found.newValue : null;
         }
 
-        
 
-        function updateObject(destination, source, isStrictMode) {
+
+        function updateObject(destination, source) {
             if (!destination) {
                 return source;// _.assign({}, source);;
             }
 
+            // TO CONSIDER:
+            //
             // let's say we sync on person
             // person has parentId
             // but thru dress we replace parentId py parent and store the parent object
-
             // we do not need to merge parent because it has a revision number
             // dress that happens during setOnReady, will set the parent object based on the parentId
 
@@ -62,50 +67,60 @@ function syncMerge() {
             // create new object containing only the properties of source merge with destination
             var newValue, object = {};
             for (var property in source) {
-                var reference = findObjectReference(source[property]);
 
-                //Object.getOwnPropertyDescriptor                
-                var d = Object.getOwnPropertyDescriptor(source, property);
-                if (d && (d.set || d.get)) {
-                    // do nothing, it is computed
+                if (property !== '_id') {
+                
+            
+                    var reference = findObjectReference(source[property]);
 
-                } else if (reference) {
-                    // if the object in the source was already processed,
-                    // let's use the reference
-                    object[property] = reference;//destination[property];
+                    //Object.getOwnPropertyDescriptor                
+                    var d = Object.getOwnPropertyDescriptor(source, property);
+                    if (d && (d.set || d.get)) {
+                        // do nothing, it is computed
 
-                } else if (_.isArray(source[property])) {
+                    } else if (reference) {
+                        // if the object in the source was already processed,
+                        // let's use the reference
+                        object[property] = reference;//destination[property];
 
-                    // if an array is multiple time references in the source
-                    // make sure we will also reference multiple time the same object in the destination
-                    if (destination[property]) {
-                        processed.push({ value: source[property], newValue: destination[property] });
-                        object[property] = updateArray(destination[property], source[property], isStrictMode);
+                    } else if (_.isArray(source[property])) {
+
+                        // if an array is multiple time references in the source
+                        // make sure we will also reference multiple time the same object in the destination
+                        if (destination[property]) {
+                            saveObjectReference(source[property], destination[property]);
+                            object[property] = updateArray(destination[property], source[property]);
+                        } else {
+                            saveObjectReference(source[property], source[property]);
+                            object[property] = source[property];
+                        }
+
+
+                    } else if (_.isFunction(source[property])) {
+                        // Function are not merged. Do nothing.
+
+                    } else if (_.isObject(source[property]) && !_.isDate(source[property])) {
+                        if (destination[property] && (
+                            (
+                                !destination[property].id) ||
+                            destination[property].id === source[property].id
+
+                        )) {
+                            // the related object exists in the destination,
+                            // let's update it.
+                            // 
+                            // so next time, a source property deals with this object, there will be no need to merge it.
+                            saveObjectReference(source[property], destination[property]);
+                            object[property] = updateObject(destination[property], source[property]);
+                        } else {
+                            saveObjectReference(source[property], source[property]);
+                            object[property] = source[property];
+                        }
+
                     } else {
-                        processed.push({ value: source[property], newValue: source[property] });
+                        // a basic property value is just copied.
                         object[property] = source[property];
                     }
-
-
-                } else if (_.isFunction(source[property])) {
-                    // Function are not merged. Do nothing.
-
-                } else if (_.isObject(source[property]) && !_.isDate(source[property])) {
-                    if (destination[property]) {
-                        // the related object exists in the destination,
-                        // let's update it.
-                        // 
-                        // so next time, a source property deals with this object, there will be no need to merge it.
-                        processed.push({ value: source[property], newValue: destination[property] });
-                        object[property] = updateObject(destination[property], source[property], isStrictMode);
-                    } else {
-                        processed.push({ value: source[property], newValue: source[property] });
-                        object[property] = source[property];
-                    }
-
-                } else {
-                    // a basic property value is just copied.
-                    object[property] = source[property];
                 }
             }
 
@@ -115,7 +130,7 @@ function syncMerge() {
             return destination;
         }
 
-        function updateArray(destination, source, isStrictMode) {
+        function updateArray(destination, source) {
             if (!destination) {
                 return source;
             }
@@ -141,16 +156,15 @@ function syncMerge() {
                                     return obj.id.toString() === item.id.toString();
                                 });
 
-                                // save reference to an object for reuse;                                
-                                processed.push({ value: item, newValue: dest });                                
+                                array.push(updateObject(dest, item));
 
-                                array.push(updateObject(dest, item, isStrictMode));
-                                
+
                             } else {
                                 if (isStrictMode) {
                                     throw new Error('objects in array must have an id otherwise we can\'t maintain the instance reference. ' + stringify(item));
                                 }
                                 array.push(item);
+                                saveObjectReference(item, item);
                             }
                         } else {
                             array.push(item);
