@@ -31,6 +31,7 @@ function syncMerge() {
 
         return updateObject(destination, source, isStrictMode);
 
+
         function findProcessed(value) {
             if (!_.isArray(value) && !_.isObject(value) && !_.isDate(value) && !_.isFunction(value)) {
                 return null;
@@ -38,15 +39,36 @@ function syncMerge() {
             var found = _.find(processed, function (p) {
                 return value === p.value;
             });
-            return found ? found.newValue : null;
+            // return null;
+            // if (found) {
+            //     if (!found.processed) {
+            //         found.processed = true;
+            //         return null;
+            //     } else {
+            //         return found.newValue;
+            //     }
+            // }
+            // return null;
+            return found;//? found.newValue : null;
         }
 
         function updateObject(destination, source, isStrictMode) {
             if (!destination) {
                 return source;// _.assign({}, source);;
             }
+
+            // let's say we sync on person
+            // person has parentId
+            // but thru dress we replace parentId py parent and store the parent object
+
+            // we do not need to merge parent because it has a revision number
+            // dress that happens during setOnReady, will set the parent object based on the parentId
+
+
+
+
             // create new object containing only the properties of source merge with destination
-            var object = {};
+            var newValue, object = {};
             for (var property in source) {
                 var processedData = findProcessed(source[property]);
 
@@ -56,31 +78,33 @@ function syncMerge() {
                     // do nothing, it is computed
 
                 } else if (processedData) {
-                    object[property] = processedData;
+                    object[property] = destination[property];//processedData;
 
-                } else  if (_.isArray(source[property])) {
-
-                        var dest = destination[property] || source[property];
-                        object[property] = updateArray(dest, source[property], isStrictMode);
-                        processed.push({ value: source[property], newValue: dest });
+                } else if (_.isArray(source[property])) {
+                    newValue = object[property] = updateArray(destination[property], source[property], isStrictMode);
+                    processed.push({ value: source[property], newValue: newValue });
 
 
-                    } else if (_.isFunction(source[property])) {
-                        //      object[property] = source[property];
+                } else if (_.isFunction(source[property])) {
+                    //      object[property] = source[property];
 
-                        //       processed.push({ value: source[property], newValue: object[property] });
+                    //       processed.push({ value: source[property], newValue: object[property] });
 
-                        // should do nothing...no function be added!
+                    // should do nothing...no function be added!
 
-                    } else if (_.isObject(source[property]) && !_.isDate(source[property])) {
-
-                        var dest = destination[property] || source[property];
-                        object[property] = updateObject(dest, source[property], isStrictMode);
-                        processed.push({ value: source[property], newValue: dest });
-
+                } else if (_.isObject(source[property]) && !_.isDate(source[property])) {
+                    if (destination[property]) {
+                        processed.push({ value: source[property], newValue: object[property] });
+                        object[property] = updateObject(destination[property], source[property], isStrictMode);
                     } else {
+                        processed.push({ value: source[property], newValue: source[property] });
                         object[property] = source[property];
                     }
+
+
+                } else {
+                    object[property] = source[property];
+                }
             }
 
             clearObject(destination);
@@ -117,7 +141,7 @@ function syncMerge() {
                                 processed.push({ value: item, newValue: dest });
                             } else {
                                 if (isStrictMode) {
-                                    throw new Error('objects in array must have an id otherwise we can\'t maintain the instance reference. ' + JSON.stringify(item));
+                                    throw new Error('objects in array must have an id otherwise we can\'t maintain the instance reference. ' + stringify(item));
                                 }
                                 array.push(item);
                             }
@@ -135,6 +159,15 @@ function syncMerge() {
     }
     function clearObject(object) {
         Object.keys(object).forEach(function (key) { delete object[key]; });
+    }
+
+    function stringify(obj) {
+        try {
+            return JSON.stringify(obj);
+        }
+        catch (err) {
+            return 'Object has cyclic structure.';
+        }
     }
 };
 
