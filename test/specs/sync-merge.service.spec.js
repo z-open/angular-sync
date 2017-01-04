@@ -79,7 +79,7 @@ describe('SyncMerge', function () {
         expect(currentVersion.o).toEqual(updateVersion.o);
     });
 
-    it('should replace object property content not reference with source content', function () {
+    it('should replace object property content with source content and maintain reference', function () {
         var currentVersionObject = { p: 1 };
         var currentVersion = {
             o: currentVersionObject
@@ -92,6 +92,93 @@ describe('SyncMerge', function () {
         expect(currentVersion.o.p).toEqual(updateVersion.o.p);
     });
 
+    xit('should maintain the reference to an array whose reference appears multiple times within an object', function () {
+    });
+
+    it('should not have circular issue when references of an object appear multiple times within an object', function () {
+        var child = { name: 'Boy' };
+        var parents = {
+            firstChild:child
+        };
+        child.parents = parents;
+        var currentVersion = {
+            firstChild: child,
+            parents: parents
+        }
+
+        var updateChild = { name: 'Teenage boy' };
+        var updateParents = {
+            firstChild:updateChild
+        };
+        updateChild.parents = updateParents;
+        var updateVersion = {            
+            firstChild: updateChild,
+            parents: updateParents
+            
+        }
+
+        syncMerge.update(currentVersion, updateVersion);
+
+        expect(currentVersion.parents === parents).toEqual(true);
+
+        expect(currentVersion.firstChild).toEqual(child);
+        expect(currentVersion.firstChild.name).toEqual(updateChild.name);
+        expect(currentVersion.firstChild.parents).toEqual(child.parents);
+
+        expect(currentVersion.firstChild.parents.name).toEqual(updateParents.name);
+
+    });
+
+
+    it('should not have circular issue when merging same object', function () {
+        var child = { name: 'Boy' };
+        var child2 = { name: 'Girl' };
+
+        var parents = {
+            name: 'Johns',
+            children: [child, child2]
+        };
+        child.parents = parents;
+        child2.parents = parents;
+        var currentVersion = {
+            firstChild: child,
+            parents: parents
+            
+
+        }
+
+        var updateChild = { name: 'Teenage boy' };
+        var updateChild2 = { name: 'Teenage girl' };
+
+        var updateParents = {
+            name: 'Barnes',
+            children: [updateChild, updateChild2]
+        };
+        updateChild.parents = updateParents;
+        updateChild2.parents = updateParents;
+
+        var updateVersion = {            
+            firstChild: updateChild2,
+            parents: updateParents
+            
+        }
+
+        syncMerge.update(currentVersion, updateVersion);
+
+        expect(currentVersion.parents === parents).toEqual(true);
+
+        expect(currentVersion.firstChild).toEqual(child);
+        expect(currentVersion.firstChild.name).toEqual(updateChild2.name);
+        expect(currentVersion.firstChild.parents).toEqual(child.parents);
+
+        expect(currentVersion.firstChild.parents.name).toEqual(updateParents.name);
+        // in the array we lose the references, there is no way to identify which object needs to be replaced without an id
+        expect(currentVersion.parents.children[0]).toEqual(updateChild);
+        expect(currentVersion.parents.children[1]).toEqual(updateChild2);
+
+    });
+
+    
 
     describe('When merging array', function () {
 
@@ -236,11 +323,6 @@ describe('SyncMerge', function () {
 
         });
 
-
-
-
     });
-
-
 
 });
